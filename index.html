@@ -30,6 +30,30 @@
             pointer-events: none;
             z-index: 10;
         }
+        
+        .stroke{
+            padding: 10px;
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 100px;
+            -webkit-text-stroke: 30px #000;
+            position: relative;
+            margin: 0;
+        }
+
+        .stroke2{
+            -webkit-text-stroke: 10px #ffffff;
+            position: absolute;
+            text-shadow:
+                10px 10px 30px rgba(0, 0, 0, 1),
+                10px 10px 30px rgba(0, 0, 0, 1),
+                10px 10px 30px rgba(0, 0, 0, 1);
+        }
+
+        .fuchiue{
+            -webkit-text-stroke: 0;
+            position: absolute;
+        }
     </style>
 </head>
 
@@ -53,6 +77,7 @@
         <!-- エンコードセクション -->
         <button onclick="startEncoding()">エクスポート</button>
         <label id="progress">0%</label>
+        <p class="stroke"><span class="stroke2">縁取り</span><span class="fuchiue">縁取り</span>縁取り</p>
     </div>
 
     <script src="https://unpkg.com/mp4-muxer@4.3.3/build/mp4-muxer.js"></script>
