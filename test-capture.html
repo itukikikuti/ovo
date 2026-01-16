@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puppeteer キャプチャテスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .stroke {
+            padding: 10px;
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 100px;
+            -webkit-text-stroke: 30px #000;
+            position: relative;
+            margin: 0;
+        }
+        .stroke2 {
+            -webkit-text-stroke: 10px #ffffff;
+            position: absolute;
+            text-shadow:
+                10px 10px 30px rgba(0, 0, 0, 1),
+                10px 10px 30px rgba(0, 0, 0, 1),
+                10px 10px 30px rgba(0, 0, 0, 1);
+        }
+        .fuchiue {
+            -webkit-text-stroke: 0;
+            position: absolute;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+        }
+        #capturedImage {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Puppeteer DOM キャプチャテスト</h1>
+
+    <div class="test-section">
+        <h2>テスト要素</h2>
+        <p class="stroke">
+            <span class="stroke2">縁取り</span>
+            <span class="fuchiue">縁取り</span>
+            縁取り
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>キャプチャテスト</h2>
+        <button onclick="testCaptureElement()">要素をキャプチャ</button>
+        <button onclick="testServerHealth()">サーバー状態確認</button>
+        
+        <div id="result"></div>
+        <img id="capturedImage" style="display:none;" />
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function testServerHealth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="status">サーバーに接続中...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ サーバー接続成功<br>
+                        状態: ${data.status}<br>
+                        Puppeteer: ${data.puppeteer}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ サーバー接続失敗<br>
+                        エラー: ${error.message}<br>
+                        サーバーが起動していることを確認してください (npm start)
+                    </div>
+                `;
+            }
+        }
+
+        async function testCaptureElement() {
+            const resultDiv = document.getElementById('result');
+            const imageElement = document.getElementById('capturedImage');
+            
+            resultDiv.innerHTML = '<div class="status">キャプチャ中...</div>';
+            imageElement.style.display = 'none';
+
+            // キャプチャする要素のHTML
+            const html = `
+                <p class="stroke">
+                    <span class="stroke2">縁取り</span>
+                    <span class="fuchiue">縁取り</span>
+                    縁取り
+                </p>
+            `;
+
+            // CSS
+            const css = `
+                .stroke {
+                    padding: 10px;
+                    color: #ff0000;
+                    font-weight: bold;
+                    font-size: 100px;
+                    -webkit-text-stroke: 30px #000;
+                    position: relative;
+                    margin: 0;
+                }
+                .stroke2 {
+                    -webkit-text-stroke: 10px #ffffff;
+                    position: absolute;
+                    text-shadow:
+                        10px 10px 30px rgba(0, 0, 0, 1),
+                        10px 10px 30px rgba(0, 0, 0, 1),
+                        10px 10px 30px rgba(0, 0, 0, 1);
+                }
+                .fuchiue {
+                    -webkit-text-stroke: 0;
+                    position: absolute;
+                }
+            `;
+
+            try {
+                const response = await fetch(`${API_URL}/api/capture-element`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        html: html,
+                        css: css,
+                        width: 800,
+                        height: 200,
+                        selector: '.stroke'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ キャプチャ成功！<br>
+                            画像がPuppeteerによって生成されました
+                        </div>
+                    `;
+                    imageElement.src = data.image;
+                    imageElement.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'キャプチャに失敗しました');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ キャプチャ失敗<br>
+                        エラー: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // ページ読み込み時にサーバー状態を確認
+        window.onload = function() {
+            testServerHealth();
+        };
+    </script>
+</body>
+</html>
