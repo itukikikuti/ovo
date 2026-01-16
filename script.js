@@ -8,6 +8,26 @@ let muxer;
 let encodedVideoBlob = null;
 let isEncoding = false;
 
+// Electron環境かどうかをチェック
+const isElectron = typeof window !== 'undefined' && window.electronAPI;
+
+// API呼び出しの抽象化
+async function callAPI(method, payload) {
+    if (isElectron) {
+        // Electron IPC
+        return await window.electronAPI[method](payload);
+    } else {
+        // ウェブサーバー API (フォールバック)
+        const endpoint = method === 'captureElement' ? '/api/capture-element' : '/api/capture-frames';
+        const response = await fetch(`http://localhost:3000${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(method === 'captureElement' ? payload : { frames: payload })
+        });
+        return await response.json();
+    }
+}
+
 window.onload = function () {
     video = document.getElementById('videoPlayer');
     canvas = document.getElementById('canvas');
